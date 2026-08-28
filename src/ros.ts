@@ -13,7 +13,8 @@ import {
   FoxgloveProtocolClient,
   type ServiceCallResponse,
   type ServiceCallFailure,
-  type ParameterValue
+  type ParameterValue,
+  type WebSocketFactory
 } from "./protocol";
 import type { ActionFeedback, ActionResult, FoxgloveChannel, FoxgloveService } from "./types";
 
@@ -28,6 +29,15 @@ type RosEventName =
 // without the caller having to widen `e` to `unknown` and narrow back.
 type RosLifecycleCallback = () => void;
 type RosErrorCallback = (error: Error) => void;
+
+export interface RosOptions {
+  url?: string;
+  /**
+   * Creates the connection socket. Node.js callers can use this to supply
+   * authentication headers or custom TLS trust without replacing globals.
+   */
+  webSocketFactory?: WebSocketFactory;
+}
 
 /** Callback for incoming topic messages (deserialized to JS objects). */
 export type MessageCallback<T = unknown> = {
@@ -194,7 +204,7 @@ interface ClientChannel {
 }
 
 export class Ros {
-  private readonly protocol = new FoxgloveProtocolClient();
+  private readonly protocol: FoxgloveProtocolClient;
   private readonly connectionListeners = new Set<RosLifecycleCallback>();
   private readonly closeListeners = new Set<RosLifecycleCallback>();
   private readonly channelsChangedListeners = new Set<RosLifecycleCallback>();
@@ -241,9 +251,10 @@ export class Ros {
 
   isConnected = false;
 
-  constructor(options?: { url?: string }) {
+  constructor(options: RosOptions = {}) {
+    this.protocol = new FoxgloveProtocolClient(options.webSocketFactory);
     this.setupProtocolHandlers();
-    if (options?.url) {
+    if (options.url) {
       this.connect(options.url);
     }
   }

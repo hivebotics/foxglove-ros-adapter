@@ -29,6 +29,10 @@ const OP_SERVICE_CALL_RESPONSE = 0x03;
 // ─── Binary opcodes (client → server) ────────────────────────────────────────
 const OP_CLIENT_MESSAGE_DATA = 0x01;
 const OP_CLIENT_SERVICE_CALL_REQUEST = 0x02;
+const WEB_SOCKET_OPEN = 1;
+
+/** Creates the WebSocket used for a Foxglove connection. */
+export type WebSocketFactory = (url: string, protocols: string[]) => WebSocket;
 
 export interface ProtocolEvents {
   serverInfo: (info: FoxgloveServerInfo) => void;
@@ -93,11 +97,19 @@ export class FoxgloveProtocolClient {
   private nextCallId = 1;
   private nextClientChannelId = 1;
 
+  constructor(
+    private readonly webSocketFactory: WebSocketFactory = (url, protocols) =>
+      new WebSocket(url, protocols)
+  ) {}
+
   connect(url: string): void {
     this.close();
     // Convert http/https URLs to ws/wss
     const wsUrl = url.replace(/^http/, "ws");
-    this.ws = new WebSocket(wsUrl, ["foxglove.sdk.v1", "foxglove.websocket.v1"]);
+    this.ws = this.webSocketFactory(wsUrl, [
+      "foxglove.sdk.v1",
+      "foxglove.websocket.v1"
+    ]);
     this.ws.binaryType = "arraybuffer";
 
     this.ws.onopen = () => this.dispatch(this.handlers.open, (h) => h(), "open");
@@ -133,7 +145,7 @@ export class FoxgloveProtocolClient {
   }
 
   get isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
+    return this.ws?.readyState === WEB_SOCKET_OPEN;
   }
 
   // ─── Subscriptions ──────────────────────────────────────────────────────
@@ -173,7 +185,7 @@ export class FoxgloveProtocolClient {
   }
 
   publishMessage(channelId: number, data: Uint8Array): void {
-    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== WEB_SOCKET_OPEN) return;
     // Binary format: [opcode:1][channelId:4][data:variable]
     const msg = new Uint8Array(1 + 4 + data.byteLength);
     const view = new DataView(msg.buffer);
@@ -187,7 +199,7 @@ export class FoxgloveProtocolClient {
 
   callService(serviceId: number, encoding: string, requestData: Uint8Array): number {
     const callId = this.nextCallId++;
-    if (this.ws?.readyState !== WebSocket.OPEN) return callId;
+    if (this.ws?.readyState !== WEB_SOCKET_OPEN) return callId;
 
     const encodingBytes = new TextEncoder().encode(encoding);
     // Binary format: [opcode:1][serviceId:4][callId:4][encodingLength:4][encoding:var][requestData:var]
@@ -385,7 +397,7 @@ export class FoxgloveProtocolClient {
   }
 
   private sendJson(msg: Record<string, unknown>): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WEB_SOCKET_OPEN) {
       this.ws.send(JSON.stringify(msg));
     }
   }

@@ -11,6 +11,8 @@
  */
 
 export { Ros } from "./ros";
+export type { RosOptions } from "./ros";
+export type { WebSocketFactory } from "./protocol";
 export { Topic } from "./topic";
 export { Service } from "./service";
 export { ActionClient } from "./action-client";

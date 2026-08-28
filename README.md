@@ -60,6 +60,36 @@ const jointStates = new Topic({
 jointStates.subscribe((msg) => console.log(msg));
 ```
 
+### Authenticated Node.js connections
+
+Browsers do not allow JavaScript to set arbitrary WebSocket handshake headers. In Node.js, pass a
+`webSocketFactory` when the endpoint requires an authorization header or a private certificate
+authority:
+
+```bash
+pnpm add ws
+```
+
+```js
+import { readFileSync } from "node:fs";
+import { Ros } from "foxglove-ros-adapter";
+import NodeWebSocket from "ws";
+
+const ros = new Ros({
+  url: "wss://robot.example:3201",
+  webSocketFactory: (url, protocols) =>
+    new NodeWebSocket(url, protocols, {
+      ca: readFileSync(process.env.MOVEIT_TLS_CERT_FILE),
+      headers: {
+        Authorization: `Bearer ${process.env.MOVEIT_FRONTEND_KEY}`
+      }
+    })
+});
+```
+
+Keep certificate verification enabled. Install the endpoint certificate in the host trust store or
+provide its issuing CA through the WebSocket implementation, as shown above.
+
 Optional runtime validation:
 
 ```ts
@@ -109,7 +139,7 @@ Now every `import { Topic } from "roslib"` resolves to this adapter with zero so
 
 ## What's supported
 
-- `new Ros({ url })` — connect,
+- `new Ros({ url, webSocketFactory? })` — connect,
   `on("connection" | "close" | "error" | "channelsChanged" | "servicesChanged")`,
   `close()`, `getTopicsForType()`, `getActionServers()`, `waitForAction()`
 - `new Topic({ ros, name, messageType, messageSchema? })` — `subscribe()`, `unsubscribe()`,

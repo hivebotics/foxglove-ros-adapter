@@ -14,12 +14,22 @@ const protocolState = vi.hoisted(() => ({
   handlers: {} as ProtocolHandlers,
   calls: [] as Array<{ serviceId: number; callId: number; encoding: string; data: Uint8Array }>,
   subscriptions: [] as Array<{ id: number; channelId: number }>,
+  webSocketFactory: undefined as unknown,
+  connectedUrl: undefined as string | undefined,
   nextCallId: 1,
   nextSubscriptionId: 1
 }));
 
 vi.mock("../src/protocol", () => ({
   FoxgloveProtocolClient: class {
+    constructor(webSocketFactory?: unknown) {
+      protocolState.webSocketFactory = webSocketFactory;
+    }
+
+    connect(url: string): void {
+      protocolState.connectedUrl = url;
+    }
+
     on<K extends keyof ProtocolEvents>(event: K, callback: ProtocolEvents[K]): void {
       protocolState.handlers[event] = callback;
     }
@@ -91,8 +101,19 @@ describe("Ros", () => {
     protocolState.handlers = {};
     protocolState.calls = [];
     protocolState.subscriptions = [];
+    protocolState.webSocketFactory = undefined;
+    protocolState.connectedUrl = undefined;
     protocolState.nextCallId = 1;
     protocolState.nextSubscriptionId = 1;
+  });
+
+  it("passes a custom WebSocket factory to the protocol client", () => {
+    const webSocketFactory = vi.fn();
+
+    new Ros({ url: "wss://robot.example:3201", webSocketFactory });
+
+    expect(protocolState.webSocketFactory).toBe(webSocketFactory);
+    expect(protocolState.connectedUrl).toBe("wss://robot.example:3201");
   });
 
   it("emits channelsChanged when channel advertisements change", () => {
