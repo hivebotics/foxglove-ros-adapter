@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/noah-wardlow/foxglove-ros-adapter/compare/v0.5.0...v0.5.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* keep publishing recoverable across disconnects ([eb3377d](https://github.com/noah-wardlow/foxglove-ros-adapter/commit/eb3377d7e48f26a9fe0edcc635cb68ecc42d37e3))
+
 # [0.5.0](https://github.com/noah-wardlow/foxglove-ros-adapter/compare/v0.4.0...v0.5.0) (2026-08-28)
 
 
