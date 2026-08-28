@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/noah-wardlow/foxglove-ros-adapter/compare/v0.4.0...v0.5.0) (2026-08-28)
+
+
+### Features
+
+* support authenticated WebSocket factories ([7a997f6](https://github.com/noah-wardlow/foxglove-ros-adapter/commit/7a997f6acdc61f75327cc049c6da1b6ce73a839a))
+
 # [0.4.0](https://github.com/noah-wardlow/foxglove-ros-adapter/compare/v0.3.0...v0.4.0) (2026-06-19)
 
 
