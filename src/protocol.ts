@@ -168,7 +168,17 @@ export class FoxgloveProtocolClient {
 
   // ─── Publishing ─────────────────────────────────────────────────────────
 
-  advertiseClientChannel(topic: string, encoding: string, schemaName: string): number {
+  /**
+   * Advertise a channel this client will publish on, or return null while the
+   * socket is down. Caching an ID for an advertise frame that was never sent
+   * would strand every later publish on that topic until reconnect.
+   */
+  advertiseClientChannel(
+    topic: string,
+    encoding: string,
+    schemaName: string
+  ): number | null {
+    if (!this.isConnected) return null;
     const id = this.nextClientChannelId++;
     this.sendJson({
       op: "advertise",

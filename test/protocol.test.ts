@@ -25,4 +25,24 @@ describe("FoxgloveProtocolClient", () => {
     ]);
     expect(socket.binaryType).toBe("arraybuffer");
   });
+
+  it("does not allocate a client channel while disconnected", () => {
+    const socket = {
+      binaryType: "blob",
+      close: vi.fn(),
+      onclose: null,
+      onerror: null,
+      onmessage: null,
+      onopen: null,
+      readyState: 0,
+      send: vi.fn()
+    } as unknown as WebSocket;
+    const client = new FoxgloveProtocolClient(() => socket);
+    client.connect("wss://robot.example:3201");
+
+    expect(
+      client.advertiseClientChannel("/cmd", "json", "std_msgs/msg/String")
+    ).toBeNull();
+    expect(socket.send).not.toHaveBeenCalled();
+  });
 });

@@ -607,6 +607,9 @@ export class Ros {
         encoding,
         schemaName
       );
+      // Drop this sample while disconnected. The next publish will advertise
+      // afresh instead of reusing an ID the server never received.
+      if (clientChannelId === null) return;
       clientCh = { clientChannelId, topic, schemaName, encoding, writer };
       this.clientChannels.set(topic, clientCh);
     }
