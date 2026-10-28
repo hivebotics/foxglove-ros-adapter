@@ -45,4 +45,31 @@ describe("FoxgloveProtocolClient", () => {
     ).toBeNull();
     expect(socket.send).not.toHaveBeenCalled();
   });
+
+  it("consumes time frames quietly while warning about malformed frames", () => {
+    const socket = {
+      close: vi.fn(),
+      onclose: null,
+      onerror: null,
+      onmessage: null,
+      onopen: null
+    } as unknown as WebSocket;
+    const client = new FoxgloveProtocolClient(() => socket);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      client.connect("ws://robot.example:3201");
+      const time = new ArrayBuffer(9);
+      const view = new DataView(time);
+      view.setUint8(0, 0x02);
+      view.setBigUint64(1, 123456789n, true);
+
+      socket.onmessage?.({ data: time } as MessageEvent);
+      expect(warn).not.toHaveBeenCalled();
+
+      socket.onmessage?.({ data: time.slice(0, 8) } as MessageEvent);
+      expect(warn).toHaveBeenCalledWith("[foxglove] malformed time frame");
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });

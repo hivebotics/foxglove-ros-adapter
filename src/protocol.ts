@@ -24,6 +24,7 @@ import { serverMessageSchema } from "./wire-schemas";
 
 // ─── Binary opcodes (server → client) ────────────────────────────────────────
 const OP_MESSAGE_DATA = 0x01;
+const OP_TIME = 0x02;
 const OP_SERVICE_CALL_RESPONSE = 0x03;
 
 // ─── Binary opcodes (client → server) ────────────────────────────────────────
@@ -382,6 +383,11 @@ export class FoxgloveProtocolClient {
           (h) => h(subscriptionId, timestamp, msgData),
           "message"
         );
+        break;
+      }
+      case OP_TIME: {
+        // Server time is not exposed by this API. Consume its known wire frame.
+        if (bytes.length !== 9) console.warn("[foxglove] malformed time frame");
         break;
       }
       case OP_SERVICE_CALL_RESPONSE: {

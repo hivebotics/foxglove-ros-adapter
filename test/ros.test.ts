@@ -116,6 +116,56 @@ describe("Ros", () => {
     expect(protocolState.connectedUrl).toBe("wss://robot.example:3201");
   });
 
+  it.each([
+    {
+      wire: "SDK",
+      schema: { request: { schema: "" }, response: { schema: "bool success\nstring message" } }
+    },
+    {
+      wire: "legacy",
+      schema: { requestSchema: "", responseSchema: "bool success\nstring message" }
+    }
+  ])("calls a Trigger with an empty $wire request schema", async ({ schema }) => {
+    const ros = new Ros();
+    const trigger: FoxgloveService = {
+      id: 27,
+      name: "/trigger",
+      type: "std_srvs/srv/Trigger",
+      ...schema
+    };
+    protocolState.handlers.advertiseServices?.([trigger]);
+
+    const response = ros.callService(trigger.name, trigger.type, {});
+    void response.catch(() => {});
+    expect(protocolState.calls).toHaveLength(1);
+    const call = protocolState.calls[0]!;
+    expect(call.encoding).toBe("cdr");
+    // Native ROS encodes an empty request as a CDR header and one dummy byte.
+    expect(Array.from(call.data)).toEqual([0, 1, 0, 0, 0]);
+    protocolState.handlers.serviceResponse?.({
+      serviceId: trigger.id,
+      callId: call.callId,
+      encoding: "cdr",
+      data: write("std_srvs/srv/Trigger_Response", "bool success\nstring message", {
+        success: false,
+        message: "not ready"
+      })
+    });
+    await expect(response).resolves.toEqual({ success: false, message: "not ready" });
+  });
+
+  it("rejects a service whose request schema is absent", async () => {
+    const ros = new Ros();
+    protocolState.handlers.advertiseServices?.([
+      { id: 27, name: "/trigger", type: "std_srvs/srv/Trigger" }
+    ]);
+
+    await expect(ros.callService("/trigger", "std_srvs/srv/Trigger", {})).rejects.toThrow(
+      "No request definition for service /trigger"
+    );
+    expect(protocolState.calls).toHaveLength(0);
+  });
+
   it("emits channelsChanged when channel advertisements change", () => {
     const ros = new Ros();
     const listener = vi.fn();

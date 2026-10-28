@@ -678,7 +678,8 @@ export class Ros {
       const advertisedType = normalizeRosType(svc.type || serviceType, "srv");
       const requestSchema = serviceRequestSchema(svc);
       const responseSchema = serviceResponseSchema(svc);
-      if (!requestSchema) {
+      // An empty ROS request schema is valid; reject only absent definitions.
+      if (typeof svc.request?.schema !== "string" && typeof svc.requestSchema !== "string") {
         reject(new Error(`No request definition for service ${serviceName}`));
         return;
       }
