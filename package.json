@@ -43,6 +43,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
+    "prepare": "npm run build",
     "clean": "rm -rf dist",
     "release": "semantic-release",
     "test": "vitest run",
